@@ -33,4 +33,4 @@ jobs:
 
       # 登出 TCR
       - name: Logout from Tencent Cloud TCR
-        run: docker logout ${TCR_REGISTRY_URL}  # 推送完成后登出
+        run: docker logout ${TCR_REGISTRY_URL}  # 推送完成后登出  
