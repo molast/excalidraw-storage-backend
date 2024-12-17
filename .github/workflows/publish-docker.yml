@@ -1,25 +1,36 @@
-name: Publish Docker Fork
+name: Publish Docker
 
 on:
   push:
     branches:
-      - release-now
+      - master  # 触发的分支
 
 jobs:
   publish-docker:
     runs-on: ubuntu-latest
+    
+    env:  # 在 job 层次定义全局环境变量
+      TCR_REGISTRY_URL: ccr.ccs.tencentyun.com  # 腾讯云 TCR 的登录地址
+      TCR_USERNAME: ${{ secrets.TCR_USERNAME }}  # 从 Secrets 获取 TCR 用户名
+      TCR_PASSWORD: ${{ secrets.TCR_PASSWORD }}  # 从 Secrets 获取 TCR 密码
+      TCR_NAMESPACE: chenaimin  # TCR 仓库命名空间
+      TCR_REPO_NAME: excalidraw-storage-backend  # TCR 仓库名称
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and push
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: alswl/excalidraw-storage-backend:latest
+      # 检出代码
+      - uses: actions/checkout@v2
+
+      # 登录到腾讯云容器镜像仓库 (TCR)
+      - name: Log in to Tencent Cloud TCR
+        run: |
+          echo ${TCR_PASSWORD} | docker login ${TCR_REGISTRY_URL} -u ${TCR_USERNAME} --password-stdin
+
+      # 构建并推送 Docker 镜像到 TCR
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${TCR_REGISTRY_URL}/${TCR_NAMESPACE}/${TCR_REPO_NAME}:latest .
+          docker push ${TCR_REGISTRY_URL}/${TCR_NAMESPACE}/${TCR_REPO_NAME}:latest
+
+      # 登出 TCR
+      - name: Logout from Tencent Cloud TCR
+        run: docker logout ${TCR_REGISTRY_URL}  # 推送完成后登出
